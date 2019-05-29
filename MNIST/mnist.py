@@ -37,6 +37,7 @@ x = layers.BatchNormalization()(x)
 x = layers.MaxPool2D()(x)
 # Global Averae Pool
 x = layers.GlobalAveragePooling2D()(x)
+#predict = layers.Activation('softmax')(x)
 predict = layers.Dense(10, activation='softmax')(x)
 model = models.Model(input_layer, predict)
 model.summary()
@@ -65,7 +66,7 @@ plt.show()
 model.evaluate(x=test_images, y=y_test) # 97% ACC
 
 ### 연예인 흑백사진 데이터 ###
-image_dir = "d:/github/keras/MNIST/test"
+image_dir = "d:/github/DeepFake/MNIST/test"
 list_dir = os.listdir(image_dir)
 test_data = np.zeros(shape=[6, 28, 28, 1])
 
