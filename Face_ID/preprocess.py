@@ -186,8 +186,8 @@ def create_wrong(file_path):
         mat2 = np.asarray(mat2)
     mat2_small=mat2[140:340,220:420]
     mat2_small=(mat2_small-np.mean(mat2_small))/np.max(mat2_small)
- #   plt.imshow(mat2_small)
- #   plt.show()
+    plt.imshow(mat2_small)
+    plt.show()
   
     
     return np.array([mat_small, mat2_small])
@@ -249,10 +249,10 @@ def create_wrong_rgbd(file_path):
     img2 = np.asarray(img2)
     img2 = img2[140:340,220:420]
     mat2_small=(mat2_small-np.mean(mat2_small))/np.max(mat2_small)
- #   plt.imshow(img2)
- #   plt.show()
- #   plt.imshow(mat2_small)
- #   plt.show()
+#    plt.imshow(img2)
+#    plt.show()
+#    plt.imshow(mat2_small)
+#    plt.show()
     full1 = np.zeros((200,200,4))
     full1[:,:,:3] = img[:,:,:3]
     full1[:,:,3] = mat_small
@@ -262,9 +262,11 @@ def create_wrong_rgbd(file_path):
     full2[:,:,3] = mat2_small
     return np.array([full1, full2])
 
-create_wrong_rgbd("d:/data/faceid_val/")[0].shape
-
-
+#
+#create_wrong("d:/data/faceid_val/")
+#create_wrong_rgbd("d:/data/faceid_val/")
+#
+#create_couple("d:/data/faceid_val/")
 
 
 

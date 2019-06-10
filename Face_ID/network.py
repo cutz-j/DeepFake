@@ -1,3 +1,6 @@
+import os
+os.chdir("d:/github/DeepFake/Face_ID")
+from preprocess import create_couple, create_couple_rgbd, create_wrong, create_wrong_rgbd
 from keras.models import Sequential, Model
 from keras.layers import Dense, Activation, Flatten, Dropout, Lambda, ELU, concatenate, GlobalAveragePooling2D, Input, BatchNormalization, SeparableConv2D, Subtract, concatenate
 from keras.activations import relu, softmax
@@ -6,7 +9,6 @@ from keras.layers.pooling import MaxPooling2D, AveragePooling2D
 from keras.optimizers import Adam, RMSprop, SGD
 from keras.regularizers import l2
 from keras import backend as K
-from preprocess import create_couple, create_couple_rgbd, create_wrong, create_wrong_rgbd
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -14,13 +16,13 @@ import glob
 import sklearn
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
+from keras.models import load_model
 
 def euclidean_distance(inputs):
     assert len(inputs) == 2, \
         'Euclidean distance needs 2 inputs, %d given' % len(inputs)
     u, v = inputs
-    return K.sqrt(K.sum((K.square(u - v)), axis=1, keepdims=True))
-        
+    return K.sqrt(K.sum((K.square(u - v)), axis=1, keepdims=True))        
 
 def contrastive_loss(y_true,y_pred):
     margin=1.
@@ -162,7 +164,13 @@ def val_generator(batch_size):
 gen = generator(16)
 val_gen = val_generator(4)
 
-outputs = model_final.fit_generator(gen, steps_per_epoch=30, epochs=50, validation_data = val_gen, validation_steps=20)
+outputs = model_final.fit_generator(gen, steps_per_epoch=30, epochs=50, 
+                                    validation_data = val_gen, validation_steps=20)
+
+model_final.save("faceid_big_rgbd_2.h5")
+model_final.save_weights("faceid.h5")
+#model_final.load_weights("faceid.h5")
+
 
 ## raw output ##
 im_in1 = Input(shape=(200,200,4))
@@ -183,7 +191,8 @@ sgd = SGD(lr=0.001, momentum=0.9)
 
 model_output.compile(optimizer=adam, loss=contrastive_loss)
 
-model_final.save("faceid_big_rgbd_2.h5")
+
+
 
 def create_input_rgbd(file_path):
   #  print(folder)
@@ -228,6 +237,9 @@ def create_input_rgbd(file_path):
     
     return np.array([full1])
 
+
+
+
 ## Visualization ###
 outputs=[]
 n=0
@@ -261,9 +273,9 @@ for i in range(len((X_embedded))):
   plt.scatter(el[0], el[1], color="C" + str(color))
   
 
-file1 = ('d:/data/faceid_train/(2012-05-16)(154211)/015_1_d.dat')
+file1 = ('d:/data/faceid_val/(2012-05-18)(154728)/006_2_d.dat')
 inp1 = create_input_rgbd(file1)
-file1 = ('d:/data/faceid_train/(2012-05-16)(154211)/011_1_d.dat')
+file1 = ('d:/data/faceid_val/(2012-05-18)(154728)/001_1_d.dat')
 inp2 = create_input_rgbd(file1)
 
 model_final.predict([inp1, inp2])
