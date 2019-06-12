@@ -275,7 +275,7 @@ for i in range(len((X_embedded))):
 
 file1 = ('d:/data/faceid_val/(2012-05-18)(154728)/006_2_d.dat')
 inp1 = create_input_rgbd(file1)
-file1 = ('d:/data/faceid_val/(2012-05-18)(154728)/001_1_d.dat')
+file1 = ('d:/data/faceid_val/(2012-05-18)(154728)/017_1_d.dat')
 inp2 = create_input_rgbd(file1)
 
 model_final.predict([inp1, inp2])
