@@ -1,2 +1,8 @@
 
 *.h5
+MaLSTM/data/test-20.csv
+MaLSTM/data/test.csv
+MaLSTM/data/train.csv
+MaLSTM/data/sample_submission.csv
+*.md
+MaLSTM/__pycache__/util.cpython-36.pyc
