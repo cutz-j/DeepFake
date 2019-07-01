@@ -9,8 +9,10 @@ def extract_questions():
     """
     Extract questions for making word2vec model.
     """
-    df1 = pd.read_csv("./data/train.csv")
-    df2 = pd.read_csv("./data/test.csv")
+    df1 = pd.read_csv("./data/train.csv", na_values=False)
+    df2 = pd.read_csv("./data/test.csv", na_values=False)
+    df1 = df1.dropna()
+    df2 = df2.dropna()
 
     for dataset in [df1, df2]:
         for i, row in dataset.iterrows():
@@ -29,3 +31,4 @@ logging.info("Done reading data file")
 model = gensim.models.Word2Vec(documents, size=300)
 model.train(documents, total_examples=len(documents), epochs=10)
 model.save("./data/Quora-Question-Pairs.w2v")
+
