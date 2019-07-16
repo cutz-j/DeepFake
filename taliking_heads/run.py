@@ -1,20 +1,21 @@
+import os
 import argparse
 import logging
-import os
+
 import sys
 from datetime import datetime, timedelta
-
 import numpy as np
 import torch
+import torch.nn as nn
 from PIL import Image
 from torch.optim import Adam
 from torchvision import transforms
-
 import config
 import network
 from dataset import preprocess_dataset, VoxCelebDataset
-
 import matplotlib.pyplot as plt
+
+from torch.utils.data import Dataset, DataLoader
 
 
 def meta_train(device, dataset_path, continue_id):
@@ -46,17 +47,30 @@ def meta_train(device, dataset_path, continue_id):
                 transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         ])
     )
+##
+#    dataset = DataLoader(dataset=dataset,
+#                         batch_size=1, shuffle=False, num_workers=0)
 
     # NETWORK ----------------------------------------------------------------------------------------------------------
 
+
     E = network.Embedder().type(dtype)
     G = network.Generator().type(dtype)
-    D = network.Discriminator(143000).type(dtype)
+    D = network.Discriminator(17160).type(dtype)
+    #
+    if torch.cuda.device_count() > 1:
+        print("use", torch.cuda.device_count(), "GPU")
+        E = nn.DataParallel(E)
+        G = nn.DataParallel(G)
+        D = nn.DataParallel(D)
+
 
     if continue_id is not None:
         E = load_model(E, continue_id)
         G = load_model(G, continue_id)
         D = load_model(D, continue_id)
+
+
 
     optimizer_E_G = Adam(
         params=list(E.parameters()) + list(G.parameters()),
@@ -68,7 +82,9 @@ def meta_train(device, dataset_path, continue_id):
     )
 
     criterion_E_G = network.LossEG(device, feed_forward=True)
+    criterion_E_G = nn.DataParallel(criterion_E_G)
     criterion_D = network.LossD(device)
+    criterion_D = nn.DataParallel(criterion_D)
 
     # TRAINING LOOP ----------------------------------------------------------------------------------------------------
     logging.info(f'Starting training loop. Epochs: {config.EPOCHS} Dataset Size: {len(dataset)}')
@@ -82,7 +98,9 @@ def meta_train(device, dataset_path, continue_id):
         G.train()
         D.train()
 
+
         for batch_num, (i, video) in enumerate(dataset):
+
             batch_start = datetime.now()
 
             # Put one frame aside (frame t)
@@ -111,7 +129,9 @@ def meta_train(device, dataset_path, continue_id):
             loss_E_G = criterion_E_G(x_t, x_hat, r_x_hat, e_hat, D.W[:, i], D_act, D_act_hat)
             loss_D = criterion_D(r_x, r_x_hat)
             loss = loss_E_G + loss_D
+#            loss.backward()
             loss.backward(retain_graph=True)
+
 
             optimizer_E_G.step()
             optimizer_D.step()
@@ -133,14 +153,15 @@ def meta_train(device, dataset_path, continue_id):
                 logging.info(f'Epoch {epoch+1}: [{batch_num + 1}/{len(dataset)}] | '
                              f'Avg Time: {avg_time} | '
                              f'Loss_E_G = {loss_E_G.item():.4} Loss_D {loss_D.item():.4}')
-                
+
                 logging.debug(f'D(x) = {r_x.item():.4} D(x_hat) = {r_x_hat.item():.4}')
-            
-            if (batch_num + 1) % 10 == 0:
                 print('Epoch {%d}: [{%f}]' %(epoch+1, (batch_num+1)/len(dataset)))
-                print('Avg Time: {%f}' %(avg_time))
+                print('Avg Time: {%s}' %(avg_time))
                 print('Loss_E_G = {%.4f} Loss_D {%.4f}' %(loss_E_G.item(), loss_D.item()))
                 print("D(x) = {%.4f} D(x_hat) = {%.4f}" %(r_x.item(), r_x_hat.item()))
+
+
+
 
             # SAVE IMAGES ----------------------------------------------------------------------------------------------
             if (batch_num + 1) % 100 == 0:
@@ -161,8 +182,9 @@ def meta_train(device, dataset_path, continue_id):
         save_model(G, device, run_start)
         save_model(D, device, run_start)
         epoch_end = datetime.now()
-#        logging.info(f'Epoch {epoch+1} finished in {epoch_end - epoch_start}. '
-#                     f'Average batch time: {sum(batch_durations, timedelta(0)) / len(batch_durations) + 0.0000001}')
+        logging.info(f'Epoch {epoch+1} finished in {epoch_end - epoch_start}. '
+                     f'Average batch time: {sum(batch_durations, timedelta(0)) / (len(batch_durations) + 0.0000001)}')
+        print('Epoch {%d} finished in {%s}. ' %(epoch+1, epoch_end - epoch_start))
 
 
 def save_model(model, gpu, time_for_name=None):
@@ -291,5 +313,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+#    main()
+    torch.cuda.empty_cache()
     pass
+    # meta_train('cuda:0', 'd:/talking_head/data', '20190627_1314')
