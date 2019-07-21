@@ -161,7 +161,7 @@ def generator_res(ft_dir, directory, batch_size=1):
             break
         
         for _ in range(batch_size):
-            if np.random.random() < 0.95:
+            if np.random.random() > 0.95:
             
                 if (len(fake_idx) < batch_size):
                     fake_idx = np.arange(len(fake_img))
@@ -225,7 +225,7 @@ ft_model.compile(optimizer=Adam(lr=learn_rate), loss='binary_crossentropy', metr
 #history_ft = ft_model.fit_generator(ft_generator, steps_per_epoch=30, epochs=3,
 #                             callbacks=callback_list, verbose=1)
 
-model = load_model("alexnet_95_2.h5")
+model = load_model("d:/data/preprocessed_dataset/alexnet_95_2.h5")
 base_model = Model(img_input, out)
 base_model.set_weights(model.get_weights())
 for l in range(len(base_model.layers) - 2):
@@ -254,7 +254,7 @@ callback_list = [EarlyStopping(monitor='acc', patience=3),
 output = siam_model.fit_generator(train_gen, steps_per_epoch=40, epochs=10,callbacks=callback_list)
 
 ## evaluate ##
-model = load_model("alexnet_95_2.h5")
+model = load_model("d:/data/preprocessed_dataset/alexnet_95_2.h5")
 model.summary()
 predictions = model.predict_generator(test_generator, steps=len(test_generator))
 y_pred = predictions.copy()
@@ -265,27 +265,20 @@ true_classes = test_generator.classes
 report = metrics.classification_report(true_classes, predictions)
 print(report)
 
-fpr, tpr, thresholds = roc_curve(true_classes, y_pred, pos_label=1.)
+fpr2, tpr2, thresholds2 = roc_curve(true_classes, y_pred, pos_label=1.)
 cm = confusion_matrix(true_classes, predictions)
 print(cm)
 recall1 = cm[0][0] / (cm[0][0] + cm[0][1])
 fallout1 = cm[1][0] / (cm[1][0] + cm[1][1])
 eer = brentq(lambda x : 1. - x - interp1d(fpr, tpr)(x), 0., 1.)
-thresh = interp1d(fpr, thresholds)(eer)
-
-plt.plot(fpr, tpr, 'o-')
-plt.plot([0, 1], [0, 1], 'k--', label="random guess")
-
-plt.xlabel('False Positive Rate (Fall-Out)')
-plt.ylabel('True Positive Rate (Recall)')
-plt.show()
-
+thresh = interp1d(fpr2, thresholds2)(eer)
 roc_auc_score(true_classes, predictions)
 
 print("FPR=FAR", fallout1)
 print("FNR=FRR", 1-recall1)
 eer
 thresh
+
 test_loss, test_acc = model.evaluate_generator(test_generator, steps=len(test_generator))
 print('test acc:', test_acc)
 print('test_loss:', test_loss)
@@ -304,20 +297,23 @@ for i in tqdm(test_gen):
 score = np.concatenate(score)
 answer = np.concatenate(answer)
 
-fpr, tpr, thresholds = roc_curve(answer, score, pos_label=1.)
+
 print(roc_auc_score(answer, score))
 y_hat = score.copy()
-y_hat[y_hat >= 0.8] = 1.
-y_hat[y_hat < 0.8] = 0.
+y_hat[y_hat >= 0.9] = 1.
+y_hat[y_hat < 0.9] = 0.
 print(metrics.classification_report(answer, y_hat))
 print(confusion_matrix(answer, y_hat))
 eer = brentq(lambda x : 1. - x - interp1d(fpr, tpr)(x), 0., 1.)
-thresh = interp1d(fpr, thresholds)(eer)
 
 cm = confusion_matrix(answer, y_hat)
 recall = cm[0][0] / (cm[0][0] + cm[0][1])
 fallout = cm[1][0] / (cm[1][0] + cm[1][1])
+
+fpr, tpr, thresholds = roc_curve(answer, score, pos_label=1.)
 fpr2, tpr2, thresholds2 = roc_curve(true_classes, y_pred, pos_label=1.)
+
+thresh = interp1d(fpr, thresholds)(eer)
 
 plt.figure(figsize=(5,4))
 plt.plot(fpr, tpr, 'r-', label="Siamese(Ours)")
@@ -329,7 +325,7 @@ plt.xlabel('False Positive Rate (Fall-Out)')
 plt.ylabel('True Positive Rate (Recall)')
 plt.title("Best AUROC: %.3f / Model: Ours" %(roc_auc_score(answer, score)))
 plt.legend(loc='lower right')
-plt.annotate("%.3f: AlexNet" %(roc_auc_score(true_classes, y_pred)), xy=(0.0, 0.98), xytext=(0.15, 0.75), arrowprops={'color':'blue'})
+plt.annotate("%.3f: AlexNet" %(roc_auc_score(true_classes, y_pred)), xy=(0.88, 0.85), xytext=(0.75, 0.70), arrowprops={'color':'blue'})
 plt.annotate("%.3f: Ours" %(roc_auc_score(answer, score)), xy=(0.0, 0.99), xytext=(0.15, 0.9), arrowprops={'color':'red'})
 plt.show()
 
